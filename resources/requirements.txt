@@ -1,0 +1,28 @@
+Chat Application
+
+This chat application consists of a chat server and an indefinite number of chat
+clients (users). The server accepts connections from the clients and delivers
+all messages from each client to other clients or delivers messages from one
+client to a specific client if a user wants. This is a tool to communicate with
+other people over Internet in real time.
+
+A client must communicate with the server and, simultaneously, it must be ready
+to read messages from the standard input to be sent and accept messages from
+other clients.
+
+Users must log in first before they can communicate with the server or other
+users. After they enter their accounts and passwords, the application will check
+the validity of the information. If it is not valid, users will get the error
+message that either the account doesn't exist or its password doesn’t match. If
+a new user wants to use this application, he/she must register first. Each
+user's information, such as account and password, is stored by server. In
+addition, the server should save all the records of chat for each user. If they
+want, users can access their own records.
+
+The server informs all online users when someone logs in or logs out. And when
+a user logs in, he/she can see all online users with their names highlighted. If
+a user wants to communicate with someone else, he/she just need to double click
+the name. Otherwise, the message sent by the user can be seen by all other
+online users.
+
+The user interface is to be user-friendly.
