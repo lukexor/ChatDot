@@ -1,0 +1,12 @@
+Start app with Username/Password fields and Login/Register buttons
+    Register simply checks for duplicate usernames and adds record to file
+    Login checks for username and compares hashed password - Password is hashed
+    by client before being sent to server over the socket
+Once Login is verified, show single pane for Buddy List
+Buddy list has your username at the top, with a Broadcast button, a Logout
+button, a History button, and a list of other online users
+Clicking the Broadcast button or double clicking any of the users opens a
+Chat Pane
+The Chat Pane shows either Broadcast or Recipient at the top, with a chat
+history text area, with a text field and Send button at the bottom
+You can have multiple Chat panes open

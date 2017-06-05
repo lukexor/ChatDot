@@ -2,3 +2,6 @@ CHATDOT
 
 This is a project for CS300 Elements of Software Engineering demonstrating the
 entire software development lifecycle.
+
+ChatDot is a basic chat application that allows users to register, login/logout,
+chat with other users or broadcast messages to everyone online.
