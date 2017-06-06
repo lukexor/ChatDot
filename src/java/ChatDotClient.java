@@ -45,6 +45,11 @@ public class ChatDotClient
         this("localhost", 4444, 200);
     }  // end constructor
 
+    public ChatDotClient(ChatDotUser user, ChatDotClientInterface clientInterface)
+    {
+        this(user, "localhost", 4444, 200, clientInterface);
+    }  // end constructor
+
     public ChatDotClient(String hostname, int serverPort, int userThrottle)
     {
         this(new ChatDotUser("Anonymous"), hostname, serverPort, userThrottle);
@@ -54,7 +59,6 @@ public class ChatDotClient
     {
         this(user, hostname, serverPort, userThrottle, null);
     }  // end constructor
-
 
     public ChatDotClient(ChatDotUser user, String hostname, int serverPort, int userThrottle, ChatDotClientInterface clientInterface)
     {
@@ -79,26 +83,29 @@ public class ChatDotClient
     public static void main(String[] args)
     {
         String hostname  = "localhost",
-               username  = "Anonymous";
+               username  = "Anonymous",
+               password  = "";
         int serverPort   = 4444,
             userThrottle = 200;
         switch (args.length) {
+            case 5:
+                try {
+                    userThrottle = Integer.parseInt(args[4]);
+                } catch (Exception e) {
+                    display_usage(e.toString());
+                    return;
+                }
             case 4:
                 try {
-                    userThrottle = Integer.parseInt(args[3]);
+                    serverPort = Integer.parseInt(args[3]);
                 } catch (Exception e) {
                     display_usage(e.toString());
                     return;
                 }
             case 3:
-                try {
-                    serverPort = Integer.parseInt(args[2]);
-                } catch (Exception e) {
-                    display_usage(e.toString());
-                    return;
-                }
+                hostname = args[2];
             case 2:
-                hostname = args[1];
+                password = args[1];
             case 1:
                 username = args[0];
             case 0:
@@ -108,14 +115,19 @@ public class ChatDotClient
                 return;
         }  // end switch
 
-        ChatDotUser user     = new ChatDotUser(username);
+        ChatDotUser user     = new ChatDotUser(username, password);
         ChatDotClient client = new ChatDotClient(user, hostname, serverPort, userThrottle);
         if (!client.start()) return;
 
         Scanner scan = new Scanner(System.in);
         while (true) {
             System.out.print("> ");
-            String msg = scan.nextLine();
+            String msg = "";
+            try {
+                msg = scan.nextLine();
+            } catch (Exception e) {
+                // Can't do much
+            }
             if (!client.isConnected()) {
                 System.out.println("No longer connected to server. Exiting...");
                 break;
@@ -123,6 +135,10 @@ public class ChatDotClient
             if (msg.equalsIgnoreCase("LOGOUT")) {
                 client.sendMessage(new ChatDotMessage(MessageType.LOGOUT, "", user));
                 break;
+            } else if (msg.equalsIgnoreCase("LOGIN")) {
+                client.sendMessage(new ChatDotMessage(MessageType.LOGIN, "", user));
+            } else if (msg.equalsIgnoreCase("REGISTER")) {
+                client.sendMessage(new ChatDotMessage(MessageType.REGISTER, "", user));
             } else if (msg.equalsIgnoreCase("WHO")) {
                 client.sendMessage(new ChatDotMessage(MessageType.WHO, "", user));
             } else {
@@ -139,7 +155,7 @@ public class ChatDotClient
     {
         try {
             socket = new Socket(hostname, serverPort);
-        } catch(Exception e) {
+        } catch (Exception e) {
             display("Failed to connect to server: " + hostname + ":" + serverPort + ". Error: " + e);
             return false;
         }
@@ -150,7 +166,7 @@ public class ChatDotClient
         try {
             iStream = new ObjectInputStream(socket.getInputStream());
             oStream = new ObjectOutputStream(socket.getOutputStream());
-        } catch(IOException e) {
+        } catch (IOException e) {
             display("Failed to set up input/output streams: " + e);
             return false;
         }
@@ -158,7 +174,7 @@ public class ChatDotClient
         new ListenFromServer().start();
         try {
             oStream.writeObject(user);
-        } catch(IOException e) {
+        } catch (IOException e) {
             display("Failed to login: " + e);
             disconnect();
             return false;
@@ -171,15 +187,59 @@ public class ChatDotClient
         connected = false;
         try {
             if (iStream != null) iStream.close();
-        } catch(Exception e) {}
+        } catch (Exception e) {}
         try {
             if (oStream != null) oStream.close();
-        } catch(Exception e) {}
+        } catch (Exception e) {}
         try {
             if (socket != null) socket.close();
-        } catch(Exception e) {}
+        } catch (Exception e) {}
         if (clientInterface != null) clientInterface.connectionFailed();
     }
+
+    public boolean register()
+    {
+        try {
+            oStream.writeObject(new ChatDotMessage(MessageType.REGISTER, "", user));
+        } catch (IOException e) {
+            display("Failed to write to server: " + e);
+            return false;
+        }
+        return true;
+    }  // end register
+
+    public boolean login()
+    {
+        try {
+            oStream.writeObject(new ChatDotMessage(MessageType.LOGIN, "", user));
+        } catch (IOException e) {
+            display("Failed to write to server: " + e);
+            return false;
+        }
+        return true;
+    }  // end login
+
+    public boolean getBuddyStatus()
+    {
+        try {
+            oStream.writeObject(new ChatDotMessage(MessageType.WHO, "", user));
+        } catch (IOException e) {
+            display("Failed to write to server: " + e);
+            return false;
+        }
+        return true;
+    }  // end getBuddyStatus
+
+    public boolean getChatHistory()
+    {
+        try {
+            oStream.writeObject(new ChatDotMessage(MessageType.HISTORY, "", user));
+        } catch (IOException e) {
+            display("Failed to write to server: " + e);
+            return false;
+        }
+        return true;
+    }  // end getBuddyStatus
 
     /*
      * Getters/Setters
@@ -192,6 +252,12 @@ public class ChatDotClient
         return user.getUsername();
     }
 
+    public void setLoggedIn() {
+        if (clientInterface != null) {
+            clientInterface.login();
+        }
+    }
+
     /*
      * Unmodified Methods
      */
@@ -199,7 +265,7 @@ public class ChatDotClient
     {
         try {
             oStream.writeObject(msg);
-        } catch(IOException e){
+        } catch (IOException e) {
             display("Failed to write to server: " + e);
         }
     }  // end sendMessage
@@ -219,8 +285,6 @@ public class ChatDotClient
         String message = "[" + dateFormatter.format(new Date()) + "] " + msg;
         if (clientInterface == null) {
             System.out.println(message);
-        } else {
-            clientInterface.append(message + "\n");
         }
     }  // end display
 
@@ -237,14 +301,36 @@ public class ChatDotClient
             display("Logged in...");
             while (true) {
                 try {
-                    String msg = (String) iStream.readObject();
+                    ChatDotMessage msg = (ChatDotMessage) iStream.readObject();
+                    MessageType type = msg.getType();
                     if (clientInterface == null) {
                         System.out.println();
-                        System.out.println(msg);
+                        System.out.println(msg.getContent());
                         System.out.print("> ");
                     } else {
-                        clientInterface.append(msg + "\n");
-
+                        System.out.println(msg.getContent());
+                        ChatDotUser sender = msg.getSender();
+                        String username = "";
+                        if (sender != null) username = sender.getUsername();
+                        switch (type) {
+                            case MESSAGE:
+                                clientInterface.sendMessage(username, msg.getContent());
+                                break;
+                            case ERROR:
+                                clientInterface.displayError(msg.getContent());
+                                break;
+                            case STATUS:
+                                clientInterface.updateStatus(username, msg.getStatus());
+                                break;
+                            case LOGIN:
+                                clientInterface.login();
+                                break;
+                            case HISTORY:
+                                clientInterface.updateChatHistory(msg.getContent());
+                                break;
+                            default:
+                                // Nothing
+                        }  // end switch
                     }
                 } catch (EOFException e) {
                     System.out.println();

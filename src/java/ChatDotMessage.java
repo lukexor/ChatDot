@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import main.ChatDotUser;
 
 enum MessageType {
-    MESSAGE, LOGOUT, WHO
+    MESSAGE, ERROR, STATUS, LOGOUT, LOGIN, REGISTER, WHO, HISTORY
 }
 
 public class ChatDotMessage implements Serializable
@@ -19,8 +19,9 @@ public class ChatDotMessage implements Serializable
     private UUID messageId;
     private ChatDotUser sender;
     private ArrayList<ChatDotUser> recipients;
-    private String content;
-    private String timestamp;
+    private String content,
+                   timestamp,
+                   status;
     private MessageType type;
 
 
@@ -35,6 +36,12 @@ public class ChatDotMessage implements Serializable
     ChatDotMessage(MessageType type, String content)
     {
         this(type, content, null, null);
+    }  // end constructor
+
+    ChatDotMessage(MessageType type, String username, String status)
+    {
+        this(type, "", new ChatDotUser(username));
+        this.status = status;
     }  // end constructor
 
     ChatDotMessage(MessageType type, String content, ChatDotUser sender)
@@ -88,4 +95,8 @@ public class ChatDotMessage implements Serializable
     {
         return type;
     }
+    public String getStatus()
+    {
+        return status;
+    }  // end getStatus
 }  // end ChatDotMessage

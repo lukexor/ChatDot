@@ -4,14 +4,17 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import main.ChatDotUser;
 import main.ChatDotClient;
 import main.ChatDotMessage;
+import main.ChatDotChatWindow;
 
-enum PaneType {
-    LOGIN, BUDDY, CHAT
-}
+// interface ChatDotUICallback
+// {
+
+// }
 
 public class ChatDotClientInterface extends JFrame implements ActionListener
 {
@@ -22,49 +25,40 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
                     registerButton;
 
     // Buddy List Pane
+    private JFrame buddyFrame,
+                   chatHistoryFrame;
+    private JPanel buddyList;
+    private JScrollPane buddyScrollList;
     private JLabel currentUsernameLabel;
     private JButton broadcastButton,
                     logoutButton,
                     chatHistoryButton;
+    private JTextArea chatHistoryArea;
 
     // Chat Panes
-    private JLabel recipientLabel;
-    private JTextArea chatHistory;
-    private JTextField messageField;
-    private JButton sendMessageButton;
+    private HashMap<String, ChatDotChatWindow> chatWindows;
 
     // The client that communicates with the ChatDot server
     private ChatDotClient client;
-    // Server details
-    private int serverPort;
-    private String serverHostname;
     // Whether we are connected to the server or not
-    private boolean connected;
+    private boolean connected,
+                    loggedIn;
 
     // The currently logged in user
     private ChatDotUser user;
-
-    // UI Panels
-    private ChatDotClientInterface loginPane,
-                                   buddyListPane;
-    private ArrayList<ChatDotClientInterface> chatPanes;
+    private HashMap<String, JButton> buddyButtons;
+    private HashMap<String, ChatDotUser> buddies;
 
     /*
      * Constructors
      */
-    ChatDotClientInterface(PaneType paneType, String recipient)
+    ChatDotClientInterface()
     {
         super("ChatDot");
-        switch (paneType) {
-            case BUDDY:
-                displayBuddyList();
-                break;
-            case CHAT:
-                displayChatWindow(recipient);
-                break;
-            default:
-                displayLogin("");
-        }  // end switch (paneType)
+        buddies      = new HashMap<String, ChatDotUser>();
+        chatWindows  = new HashMap<String, ChatDotChatWindow>();
+        buddyButtons = new HashMap<String, JButton>();
+        displayLogin();
     }  // end constructor
 
     /*
@@ -72,7 +66,7 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
      */
     public static void main(String[] args)
     {
-        ChatDotClientInterface loginPane = new ChatDotClientInterface(PaneType.LOGIN, "");
+        ChatDotClientInterface loginPane = new ChatDotClientInterface();
     }  // end main
 
     /*
@@ -82,93 +76,179 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
     {
         closeBuddyList();
         closeChatWindows();
-        displayLogin("Disconnected from server.");
+        displayError("Server disconnected.");
+        setVisible(true);
         connected = false;
     }  // end connectionFailed
 
     public void actionPerformed(ActionEvent event)
     {
         Object object = event.getSource();
-        if (object == logout) {
-            client.sendMessage(new ChatDotMessage(MessageType.LOGOUT, "", user));
-            return;
-        } else if (object == who) {
-            client.sendMessage(new ChatDotMessage(MessageType.WHO, "", user));
-            return;
-        } else if (connected) {
-            client.sendMessage(new ChatDotMessage(MessageType.MESSAGE,
-                        textInputField.getText(), user));
-            textInputField.setText("");
-            return;
-        } else if (object == login) {
-            String username = textInputField.getText().trim();
-            if (username.length() == 0) return;
-            String hostname = serverHostnameField.getText().trim();
-            if (hostname.length() == 0) return;
-            String portString = serverPortField.getText().trim();
-            if (portString.length() == 0) return;
-            int port = 0;
-            try {
-                port = Integer.parseInt(portString);
-            } catch (Exception e) {
+
+        // Get login values
+        if (!loggedIn) {
+            String username = usernameField.getText().trim();
+            String password = passwordField.getText();
+            if (username.length() == 0 || password.length() == 0) {
+                JOptionPane.showMessageDialog(this,
+                    "Please enter both a username and a password.",
+                    "Invalid Input",
+                    JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            user = new ChatDotUser(username);
-            client = new ChatDotClient(user, hostname, port, 200, this);
-            if (!client.start()) return;
-            textInputField.setText("");
-            label.setText("Enter your message:");
-            connected = true;
-
-            login.setEnabled(false);
-            logout.setEnabled(true);
-            who.setEnabled(true);
-            serverHostnameField.setEditable(false);
-            serverPortField.setEditable(false);
-            textInputField.addActionListener(this);
+            // Start the client
+            user = new ChatDotUser(username, password);
+            if (!connected) {
+                client = new ChatDotClient(user, this);
+                if (!client.start()) return;
+                connected = true;
+            }
         }
+
+        if (object == registerButton) {
+            try {
+                if (!client.register()) {
+                    displayError("Failed to register.");
+                    return;
+                }
+            } catch (Exception e) {
+                displayError("Failed to register.");
+                return;
+            }
+        } else if (object == loginButton) {
+            try {
+                if (!client.login()) {
+                    displayError("Failed to login.");
+                    return;
+                }
+            } catch (Exception e) {
+                displayError("Failed to login.");
+                return;
+            }
+        } else if (object == logoutButton) {
+            client.disconnect();
+            logout();
+        } else if (object == broadcastButton) {
+            displayChatWindow(null);
+        } else if (object == chatHistoryButton) {
+            displayChatHistory();
+        } else if (object instanceof JButton) {
+            JButton button = (JButton) object;
+            if (button.getActionCommand().equals("chat")) {
+                String username = button.getText();
+                displayChatWindow(username);
+            }
+        }
+
     }  // end actionPerformed
+
+    public void sendMessage(String sender, String message)
+    {
+        ChatDotChatWindow window = chatWindows.get(sender);
+        if (window == null) {
+            window = new ChatDotChatWindow(sender, client, user, this);
+            chatWindows.put(sender, window);
+        } else {
+            window.setVisible(true);
+        }
+        window.append(message);
+    }  // end append
+
+    public void updateChatHistory(String history)
+    {
+        if (chatHistoryArea != null) {
+            chatHistoryArea.append(history + "\n");
+            chatHistoryArea.setCaretPosition(chatHistoryArea.getText().length() - 1);
+        }
+    }
 
     /*
      * Unmodified Methods
      */
-    void append(String str)
+    void displayError(String msg)
     {
-        // chatHistory.append(str);
-        // chatHistory.setCaretPosition(chatHistory.getText().length() - 1);
-    }
+        JOptionPane.showMessageDialog(this,
+            msg,
+            "Error",
+            JOptionPane.ERROR_MESSAGE);
+    }  // end displayError
+
+    void login()
+    {
+        setVisible(false);
+        displayBuddyList();
+        loggedIn = true;
+    }  // end login
+
+    void logout()
+    {
+        closeChatWindows();
+        closeBuddyList();
+        setVisible(true);
+        loggedIn = false;
+    }  // end logout
+
+    void updateStatus(String username, String status)
+    {
+        if (user.getUsername().equals(username)) {
+            loggedIn = true;
+            return;
+        }
+        System.out.println(username + ": " + status);
+        ChatDotUser buddy   = buddies.get(username);
+        JButton buddyButton = buddyButtons.get(username);
+        if (buddy == null) {
+            buddy       = new ChatDotUser(username);
+            buddyButton = new JButton(username);
+            if (status.equals("Logged In")) {
+                buddy.setOnline(true);
+                buddyButton.setEnabled(true);
+            } else {
+                buddyButton.setEnabled(false);
+            }
+            buddyButton.addActionListener(this);
+            buddyButton.setActionCommand("chat");
+            buddyList.add(buddyButton);
+            buddies.put(username, buddy);
+            buddyButtons.put(username, buddyButton);
+        } else if (username.equals(buddy.getUsername())) {
+            if (status.equals("Logged In")) {
+                buddy.setOnline(true);
+                buddyButton.setEnabled(true);
+            } else {
+                buddy.setOnline(false);
+                buddyButton.setEnabled(false);
+            }
+        }
+        buddyList.revalidate();
+        buddyList.repaint();
+    }  // end method
 
     /*
      * Private Methods
      */
-    private void displayLogin(String error)
+    private void displayLogin()
     {
         setTitle("ChatDot Login");
 
-        // Initialize panes
-        buddyListPane = null;
-        chatPanes     = new ArrayList<ChatDotClientInterface>();
-
         // Main Login Panel
-        JPanel loginPanel = new JPanel(new GridLayout(5, 1));
+        JPanel loginPanel = new JPanel(new GridLayout(5, 1, 10, 10));
 
         // Welcome text
         JLabel loginLabel = new JLabel("Welcome to ChatDot!",
                 SwingConstants.CENTER);
-        // Error text for failed logins, duplicate username, etc
-        JLabel errorLabel = new JLabel("");
-        errorLabel.setHorizontalAlignment(SwingConstants.CENTER);
         loginPanel.add(loginLabel);
-        loginPanel.add(errorLabel);
 
         // Login Fields Panel
         // TODO: Lookup JFrame docs and format this better
         JPanel loginFieldsPanel = new JPanel(new GridLayout(2, 2));
         JLabel usernameLabel    = new JLabel("Username: ");
         JLabel passwordLabel    = new JLabel("Password: ");
+        usernameLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+        passwordLabel.setBorder(BorderFactory.createEmptyBorder(5, 20, 0, 0));
         usernameField           = new JTextField("");
-        passwordField           = new JTextField("");
+        passwordField           = new JPasswordField("");
         usernameField.setBackground(Color.WHITE);
         passwordField.setBackground(Color.WHITE);
         loginFieldsPanel.add(usernameLabel);
@@ -179,8 +259,8 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
 
         // Login Buttons Panel
         JPanel loginButtonsPanel = new JPanel(new GridLayout(2, 2));
-        JButton loginButton      = new JButton("Login");
-        JButton registerButton   = new JButton("Register");
+        loginButton              = new JButton("Login");
+        registerButton           = new JButton("Register");
         loginButton.addActionListener(this);
         registerButton.addActionListener(this);
         // Spacers
@@ -194,42 +274,106 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
         add(loginPanel, BorderLayout.CENTER);
 
         // Put cursor in the login field
-        loginButton.requestFocus();
+        usernameField.requestFocus();
 
         // Make it visible
         // TODO: Move frame to center of screen
+        loginPanel.getRootPane().setDefaultButton(loginButton);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(400, 300);
         setVisible(true);
-
-        // TODO: Move this instantiation to logging in, this displays
-        // the Buddy List
-        // buddyListPane = new ChatDotClientInterface(PaneType.BUDDY, "");
-        // TODO: Add chatpanes
-        // chatPanes.add(new ChatDotClientInterface(PaneType.CHAT, username);
     }  // end displayLogin
 
     private void displayBuddyList()
     {
-        setTitle("Buddy List");
+        buddyFrame = new JFrame("Buddy List");
+        buddyFrame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        buddyFrame.setSize(250, 650);
 
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(400, 300);
-        setVisible(true);
+        // Main Panel
+        JPanel buddyPanel = new JPanel();
+        buddyPanel.setLayout(new BoxLayout(buddyPanel, BoxLayout.Y_AXIS));
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+
+        // Current username
+        currentUsernameLabel = new JLabel("Logged In User: " + user.getUsername());
+        topPanel.add(currentUsernameLabel);
+
+        // Buttons
+        logoutButton = new JButton("Logout");
+        logoutButton.addActionListener(this);
+        broadcastButton = new JButton("Broadcast");
+        broadcastButton.addActionListener(this);
+        chatHistoryButton = new JButton("Chat History");
+        chatHistoryButton.addActionListener(this);
+
+        topPanel.add(logoutButton);
+        topPanel.add(broadcastButton);
+        topPanel.add(chatHistoryButton);
+
+        buddyList = new JPanel();
+        buddyList.setLayout(new BoxLayout(buddyList, BoxLayout.Y_AXIS));
+
+        client.getBuddyStatus();
+
+        buddyScrollList = new JScrollPane(buddyList);
+        buddyPanel.add(topPanel);
+        buddyPanel.add(buddyScrollList);
+        buddyFrame.add(buddyPanel);
+        buddyFrame.setVisible(true);
     }  // end displayBuddyList
 
     private void closeBuddyList()
     {
+        buddyFrame.setVisible(false);
     }  // end closeBuddyList
 
     private void displayChatWindow(String recipient)
     {
-        setTitle(recipient);
-        setSize(400, 300);
-        setVisible(true);
+        if (recipient == null) {
+            recipient = "Broadcast";
+        }
+        ChatDotChatWindow chatWindow = chatWindows.get(recipient);
+        if (chatWindow == null) {
+            chatWindow = new ChatDotChatWindow(recipient, client, user, this);
+            chatWindows.put(recipient, chatWindow);
+        } else {
+            chatWindow.setVisible(true);
+        }
     }  // end displayChatWindow
+
+    private void displayChatHistory()
+    {
+        if (chatHistoryFrame == null) {
+            chatHistoryFrame = new JFrame("Chat History");
+            chatHistoryFrame.setDefaultCloseOperation(HIDE_ON_CLOSE);
+            chatHistoryFrame.setSize(250, 650);
+
+            JPanel chatPane = new JPanel();
+            chatPane.setLayout(new BoxLayout(chatPane, BoxLayout.Y_AXIS));
+
+            chatHistoryArea = new JTextArea(13, 20);
+            JPanel chatAreaPane = new JPanel(new GridLayout(1, 1));
+            chatAreaPane.add(new JScrollPane(chatHistoryArea));
+            chatHistoryArea.setEditable(false);
+            chatPane.add(chatAreaPane, BorderLayout.CENTER);
+
+            client.getChatHistory();
+            chatHistoryFrame.add(chatPane);
+        }
+        chatHistoryFrame.setVisible(true);
+    }
 
     private void closeChatWindows()
     {
+        for (int i = 0; i < chatWindows.size(); ++i) {
+            ChatDotChatWindow window = chatWindows.get(i);
+            if (window != null) {
+                window.setVisible(false);
+                window.dispose();
+            }
+            chatWindows.remove(i);
+        }  // end for
     }  // end closeChatWindows
 }
