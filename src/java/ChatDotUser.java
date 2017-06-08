@@ -39,6 +39,10 @@ public class ChatDotUser implements Serializable
         return username;
     }  // end getUsername
 
+    public void setPassword(String password) {
+        this.password = password;
+    }  // end getUsername
+
     public String getPassword() {
         return password;
     }  // end getUsername

@@ -41,12 +41,12 @@ public class ChatDotServer
     /*
      * Constructors
      */
-    ChatDotServer()
+    public ChatDotServer()
     {
         this(4444, 200, 100);
     }  // end constructor
 
-    ChatDotServer(int listenPort, int roomThrottle, int maxConnections)
+    public ChatDotServer(int listenPort, int roomThrottle, int maxConnections)
     {
         this.uniqueId       = 0;
         this.listenPort     = listenPort;
@@ -232,6 +232,22 @@ public class ChatDotServer
         }  // end for
         return true;
     }  // end login
+
+    void purgeUserDatabase()
+    {
+        BufferedWriter bWriter = null;
+        FileWriter fWriter     = null;
+        try {
+            File file = new File(USER_RECORD_FILE);
+            fWriter   = new FileWriter(file, false);
+            bWriter   = new BufferedWriter(fWriter);
+            bWriter.write("");
+            bWriter.flush();
+            display("Purged user database.");
+        } catch (Exception e) {
+            display("Failed to purge user database.");
+        }
+    }  // end method
 
     /*
      * Protected Methods

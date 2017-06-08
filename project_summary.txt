@@ -1,0 +1,39 @@
+ChatDot Project Summary
+
+The structure of the application was built by having a Server class initialize
+itself in a main() method and begin by calling its start() method which runs an
+infinite loop on a throttle of 200ms. During each run of the loop it attempts to
+purge any disconnected clients and accepts new connections and then initializing
+a ClientThread class which extends Thread for each new connection. The Server
+keeps track of all these threads in an ArrayList structure.
+
+The ClientThread class for each connection then loops infinitely and attempts to
+read objects from the socket input stream. Depending on the type of object
+received, the server will take an appropriate action before starting the loop
+over. Since a record of each connected thread is kept, the server can send out
+messages to each client such as login/logout events, or chat requests.
+
+For the Chat Client, it's initialized by starting up and initializing a Chat
+Interface class GUI that the user can interact with. Upon logging in, the GUI
+initializes a Client class and calls its start() method. Inside it creates an
+instance of a ListenFromServer class which also extends from Thread. In the
+run() method of the ListenFromServer class, an infinite loop attempts to read
+objects from the clients input stream (from the Server it connected to) and acts
+accordingly communicating with the Interface class depending on messages
+received from the Server.
+
+The Interface class then has various calls to the Client which can output calls
+to the Server, ensuring back-and-forth communication.
+
+
+Some of the struggle of this project was how quickly it grew as functionality
+was added and how abstract some of the logic had to be to account for multiple
+threads and detached services. My initial design was passing a Message class
+back and forth as objects, but it soon became clear that it was too limiting. If
+I were to do a redesign, I would change that to instead be a JSON object which
+has more flexibility.
+
+There are no extra features outside of basic requirements and the UI could use
+with a lot more refinement. One small feature I never got to was a popup for
+login/logout notifications. As of the current version, the only notification is
+that the chat button for the user greys out.

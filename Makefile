@@ -1,13 +1,19 @@
+BUILD_OPT = -d build
+CLASSPATH_OPT = -classpath 'build'
+T_CLASSPATH_OPT = -classpath 'build:lib/*'
+.PHONY: test
+
 all:
 	mkdir -p build
-	javac -d build src/java/*java
+	javac $(CLASSPATH_OPT) $(BUILD_OPT) src/java/*java
+	javac $(T_CLASSPATH_OPT) $(BUILD_OPT) test/*java
 run_server:
-	java -classpath ./build main.ChatDotServer 4444 200
+	java $(CLASSPATH_OPT) main.ChatDotServer 4444 200
 run_client:
-	java -classpath ./build main.ChatDotClient bross password localhost 4444
+	java $(CLASSPATH_OPT) main.ChatDotClient bross password localhost 4444
 run_client_gui:
-	java -classpath ./build main.ChatDotClientInterface
+	java $(CLASSPATH_OPT) main.ChatDotClientInterface
 test:
-	java test.TestAll
+	java $(T_CLASSPATH_OPT) org.junit.runner.JUnitCore main.ChatDotServerTest
 clean:
 	rm -rf build/*
