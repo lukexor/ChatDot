@@ -68,8 +68,11 @@ public class ChatDotChatWindow extends JFrame implements ActionListener
         String message = timestamp + user.getUsername() + ": " + messageField.getText();
         chatArea.append(message + "\n");
         chatArea.setCaretPosition(chatArea.getText().length() - 1);
-        ArrayList<ChatDotUser> recipients = new ArrayList<ChatDotUser>();
-        recipients.add(new ChatDotUser(getTitle()));
+        ArrayList<ChatDotUser> recipients = null;
+        if (!getTitle().equals("Broadcast")) {
+            recipients = new ArrayList<ChatDotUser>();
+            recipients.add(new ChatDotUser(getTitle()));
+        }
         client.sendMessage(new ChatDotMessage(
             MessageType.MESSAGE,
             messageField.getText(),

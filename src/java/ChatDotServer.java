@@ -141,6 +141,7 @@ public class ChatDotServer
             if (thread.getUsername().equals(sender.getUsername())) continue;
             ChatDotUser recipient = new ChatDotUser(thread.getUsername());
             logChatHistory(recipient, broadcast, "IN", timestamp, msg.getContent());
+            display("Broadcasting to " + thread.getUsername());
             if (!thread.sendMessage(timestamp + message, MessageType.MESSAGE, broadcast)) {
                 clients.remove(i);
                 display("Disconnected Client " + thread.getUsername()
@@ -326,7 +327,7 @@ public class ChatDotServer
             bWriter   = new BufferedWriter(fWriter);
             if (direction.equals("OUT")) {
                 bWriter.write(timestamp + logUser.getUsername() + " -> "
-                    + toFromUser.getUsername() + ": " + message);
+                    + toFromUser.getUsername() + ": " + message + "\n");
             } else {
                 bWriter.write(timestamp + toFromUser.getUsername() + " -> "
                     + logUser.getUsername() + ": " + message + "\n");

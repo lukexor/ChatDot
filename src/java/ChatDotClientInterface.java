@@ -400,7 +400,6 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
                 window.setVisible(false);
                 window.dispose();
             }
-            chatWindows.remove(pair.getKey());
             iter.remove();
         }  // end while
     }  // end closeChatWindows
