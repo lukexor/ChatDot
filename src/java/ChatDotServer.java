@@ -224,7 +224,7 @@ public class ChatDotServer
         // Login and update users
         for (int i = 0; i < clients.size(); ++i) {
             ClientThread client = clients.get(i);
-            client.sendStatus(username, "Logged In");
+            client.sendStatus(username, "Logged In", false);
             client.setLoggedIn();
             if (client.getUsername().equals(username)) {
                 client.sendMessage("", MessageType.LOGIN, null);
@@ -277,7 +277,7 @@ public class ChatDotServer
                 display(thread.getUsername() + " disconnected.");
                 for (int j = 0; j < clients.size(); ++j) {
                     if (i == j) continue;
-                    clients.get(j).sendStatus(thread.getUsername() ,"Logged Out");
+                    clients.get(j).sendStatus(thread.getUsername() ,"Logged Out", false);
                 }  // end for
                 thread.close();
                 clients.remove(i);
@@ -545,7 +545,9 @@ public class ChatDotServer
                             String currentLine;
                             while ((currentLine = bReader.readLine()) != null) {
                                 String username = currentLine.split(":")[0];
-                                userStatus.put(username, "Logged Out");
+                                if (username.length() > 0) {
+                                    userStatus.put(username, "Logged Out");
+                                }
                             }
                         } catch (Exception e) {
                             // No harm if we couldn't read a file
@@ -557,7 +559,8 @@ public class ChatDotServer
                         Iterator iter = userStatus.entrySet().iterator();
                         while (iter.hasNext()) {
                             Map.Entry pair = (Map.Entry) iter.next();
-                            sendStatus((String)pair.getKey(), (String)pair.getValue());
+                            boolean isLogin = msg.getContent().equals("Login") ? true : false;
+                            sendStatus((String)pair.getKey(), (String)pair.getValue(), isLogin);
                             iter.remove();
                         }  // end for
                     case HISTORY:
@@ -627,14 +630,14 @@ public class ChatDotServer
             return true;
         }  // end sendMessage
 
-        private boolean sendStatus(String username, String status)
+        private boolean sendStatus(String username, String status, boolean isLogin)
         {
             if (!socket.isConnected()) {
                 close();
                 return false;
             }
             try {
-                ChatDotMessage msg = new ChatDotMessage(MessageType.STATUS, username, status);
+                ChatDotMessage msg = new ChatDotMessage(MessageType.STATUS, username, status, isLogin);
                 oStream.writeObject(msg);
             } catch (IOException e) {
                 display("Error sending message to " + user.getUsername());

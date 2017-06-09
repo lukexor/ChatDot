@@ -76,7 +76,6 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
     {
         closeBuddyList();
         closeChatWindows();
-        displayError("Server disconnected.");
         setVisible(true);
         connected = false;
     }  // end connectionFailed
@@ -189,7 +188,7 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
         loggedIn = false;
     }  // end logout
 
-    void updateStatus(String username, String status)
+    void updateStatus(String username, String status, boolean isLogin)
     {
         if (user.getUsername().equals(username)) {
             loggedIn = true;
@@ -220,6 +219,25 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
                 buddy.setOnline(false);
                 buddyButton.setEnabled(false);
             }
+        }
+        if (!isLogin) {
+            JDialog notification = new JDialog();
+            notification.setSize(150, 100);
+            Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+            int x = (int) dimension.getWidth() - notification.getWidth() - 15;
+            int y = 15;
+            notification.setLocation(x, y);
+            JLabel statusLabel = new JLabel(username + ": " + status, JLabel.CENTER);
+            notification.add(statusLabel);
+            Timer timer = new Timer(2000, new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    notification.setVisible(false);
+                    notification.dispose();
+                }
+            });
+            timer.setRepeats(false);
+            timer.start();
+            notification.setVisible(true);
         }
         buddyList.revalidate();
         buddyList.repaint();
@@ -277,10 +295,13 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
         usernameField.requestFocus();
 
         // Make it visible
-        // TODO: Move frame to center of screen
+        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+        setSize(400, 300);
+        int x = (int) ((dimension.getWidth() - getWidth()) / 2);
+        int y = (int) ((dimension.getHeight() - getHeight()) / 2);
+        setLocation(x, y);
         loginPanel.getRootPane().setDefaultButton(loginButton);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(400, 300);
         setVisible(true);
     }  // end displayLogin
 
@@ -289,6 +310,7 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
         buddyFrame = new JFrame("Buddy List");
         buddyFrame.setDefaultCloseOperation(EXIT_ON_CLOSE);
         buddyFrame.setSize(250, 650);
+        buddyFrame.setLocation(15, 15);
 
         // Main Panel
         JPanel buddyPanel = new JPanel();
@@ -326,7 +348,9 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
 
     private void closeBuddyList()
     {
-        buddyFrame.setVisible(false);
+        if (buddyFrame != null) {
+            buddyFrame.setVisible(false);
+        }
     }  // end closeBuddyList
 
     private void displayChatWindow(String recipient)

@@ -23,7 +23,7 @@ public class ChatDotMessage implements Serializable
                    timestamp,
                    status;
     private MessageType type;
-
+    private boolean isLogin;
 
     /*
      * Constructors
@@ -38,16 +38,17 @@ public class ChatDotMessage implements Serializable
         this(type, content, null, null);
     }  // end constructor
 
-    ChatDotMessage(MessageType type, String username, String status)
+    ChatDotMessage(MessageType type, String username, String status, boolean isLogin)
     {
         this(type, "", new ChatDotUser(username));
         this.status = status;
+        this.isLogin = isLogin;
     }  // end constructor
 
     ChatDotMessage(MessageType type, String content, ChatDotUser sender)
     {
         this(type, content, sender, null);
-    }
+    }  // end constructor
 
     ChatDotMessage(MessageType type, String content, ChatDotUser sender,
             ArrayList<ChatDotUser> recipients)
@@ -58,7 +59,9 @@ public class ChatDotMessage implements Serializable
         this.recipients = recipients;
         this.timestamp  = date_formatter.format(new Date());
         this.type       = type;
-    }
+        this.status     = "";
+        this.isLogin    = false;
+    }  // end constructor
 
     /*
      * Getters/Setters
@@ -66,37 +69,41 @@ public class ChatDotMessage implements Serializable
     public ChatDotUser getSender()
     {
         return sender;
-    }
+    }  // end getSender
     public void setSender(ChatDotUser sender)
     {
         this.sender = sender;
-    }
+    }  // end setSender
     public ArrayList<ChatDotUser> getRecipients()
     {
         return recipients;
-    }
+    }  // end getRecipients
     public void setRecipients(ArrayList<ChatDotUser> recipients)
     {
         this.recipients = recipients;
-    }
+    }  // end setRecipients
     public String getContent()
     {
         return content;
-    }
+    }  // end getContent
     public void setContent(String content)
     {
         this.content = content;
-    }
+    }  // end setContent
     public String getTimestamp()
     {
         return timestamp;
-    }
+    }  // end getTimestamp
     public MessageType getType()
     {
         return type;
-    }
+    }  // end getType
     public String getStatus()
     {
         return status;
     }  // end getStatus
+    public boolean getIsLogin()
+    {
+        return isLogin;
+    }  // end isLogin
 }  // end ChatDotMessage

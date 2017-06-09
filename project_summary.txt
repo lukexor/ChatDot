@@ -34,6 +34,4 @@ I were to do a redesign, I would change that to instead be a JSON object which
 has more flexibility.
 
 There are no extra features outside of basic requirements and the UI could use
-with a lot more refinement. One small feature I never got to was a popup for
-login/logout notifications. As of the current version, the only notification is
-that the chat button for the user greys out.
+with a lot more refinement.

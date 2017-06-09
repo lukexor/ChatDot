@@ -222,7 +222,7 @@ public class ChatDotClient
     public boolean getBuddyStatus()
     {
         try {
-            oStream.writeObject(new ChatDotMessage(MessageType.WHO, "", user));
+            oStream.writeObject(new ChatDotMessage(MessageType.WHO, "Login", user));
         } catch (IOException e) {
             display("Failed to write to server: " + e);
             return false;
@@ -320,7 +320,7 @@ public class ChatDotClient
                                 clientInterface.displayError(msg.getContent());
                                 break;
                             case STATUS:
-                                clientInterface.updateStatus(username, msg.getStatus());
+                                clientInterface.updateStatus(username, msg.getStatus(), msg.getIsLogin());
                                 break;
                             case LOGIN:
                                 clientInterface.login();
