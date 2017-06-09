@@ -1,19 +1,10 @@
-jar cvf bin/ChatDotServer.jar \
-    build/main/ChatDotMessage.class \
-    'build/main/ChatDotServer$1.class' \
-    'build/main/ChatDotServer$ClientThread.class' \
-    build/main/ChatDotServer.class \
-    build/main/ChatDotUser.class \
-    build/main/MessageType.class \
+#!/bin/bash
+
+make
+
+jar cvfe bin/ChatDotServer.jar main.ChatDotServer -C build .
+jar uvf bin/ChatDotServer.jar \
     ChatHistory/ \
     userRecordFile.txt
 
-jar cvf bin/ChatDotClient.jar \
-    build/main/ChatDotChatWindow.class \
-    'build/main/ChatDotClient$1.class' \
-    'build/main/ChatDotClient$ListenFromServer.class' \
-    build/main/ChatDotClient.class \
-    build/main/ChatDotClientInterface.class \
-    build/main/ChatDotMessage.class \
-    build/main/ChatDotUser.class \
-    build/main/MessageType.class
+jar cvfe bin/ChatDotClient.jar main.ChatDotClientInterface -C build .

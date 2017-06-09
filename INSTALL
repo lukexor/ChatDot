@@ -1,0 +1,10 @@
+Requires Java 8 (major.minor version 52.0)
+
+To start the Chat Server:
+
+$ java -jar bin/ChatDotServer.jar
+
+
+To start the Chat Client:
+
+$ java -jar bin/ChatDotClient.jar
