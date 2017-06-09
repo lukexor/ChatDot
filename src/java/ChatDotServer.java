@@ -135,19 +135,26 @@ public class ChatDotServer
         display(message);
         // Loop in reverse order in case clients have disconnected
         ChatDotUser broadcast = new ChatDotUser("Broadcast");
-        logChatHistory(sender, broadcast, "OUT", timestamp, msg.getContent());
+        String onlineUsersString = "";
         for (int i = clients.size() - 1; i >= 0; --i) {
             ClientThread thread = clients.get(i);
             if (thread.getUsername().equals(sender.getUsername())) continue;
-            ChatDotUser recipient = new ChatDotUser(thread.getUsername());
-            logChatHistory(recipient, broadcast, "IN", timestamp, msg.getContent());
-            display("Broadcasting to " + thread.getUsername());
             if (!thread.sendMessage(timestamp + message, MessageType.MESSAGE, broadcast)) {
                 clients.remove(i);
                 display("Disconnected Client " + thread.getUsername()
                         + " removed from client list.");
+            } else {
+                ChatDotUser recipient = new ChatDotUser(thread.getUsername());
+                logChatHistory(recipient, broadcast, "IN", timestamp, "(From: " + sender.getUsername()
+                        + ") " + msg.getContent());
+                onlineUsersString += thread.getUsername();
+                if (onlineUsersString.length() > 0 && i > 0) {
+                    onlineUsersString += ", ";
+                }
             }
         }  // end for
+        logChatHistory(sender, broadcast, "OUT", timestamp, "(To: " + onlineUsersString
+                + ") " + msg.getContent());
     }  // end broadcast
 
     public synchronized void sendUserMessage(ChatDotMessage msg)
