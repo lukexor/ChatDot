@@ -135,12 +135,12 @@ public class ChatDotServer
         display(message);
         // Loop in reverse order in case clients have disconnected
         ChatDotUser broadcast = new ChatDotUser("Broadcast");
-        logChatHistory(sender, timestamp + message);
+        logChatHistory(sender, broadcast, "OUT", timestamp, msg.getContent());
         for (int i = clients.size() - 1; i >= 0; --i) {
             ClientThread thread = clients.get(i);
             if (thread.getUsername().equals(sender.getUsername())) continue;
             ChatDotUser recipient = new ChatDotUser(thread.getUsername());
-            logChatHistory(recipient, timestamp + message);
+            logChatHistory(recipient, broadcast, "IN", timestamp, msg.getContent());
             if (!thread.sendMessage(timestamp + message, MessageType.MESSAGE, broadcast)) {
                 clients.remove(i);
                 display("Disconnected Client " + thread.getUsername()
@@ -156,14 +156,14 @@ public class ChatDotServer
         String timestamp = "[" + dateFormatter.format(new Date()) + "] ";
         String message   = sender.getUsername() + ": " + msg.getContent();
         ArrayList<ChatDotUser> recipients = msg.getRecipients();
-        logChatHistory(sender, timestamp + message);
         for (int i = recipients.size() - 1; i >= 0; --i) {
             ChatDotUser recipient = recipients.get(i);
             for (int j = clients.size() - 1; j >= 0; --j) {
                 ClientThread thread = clients.get(j);
                 if (thread.getUsername().equals(sender.getUsername())) continue;
                 // Found a match, send message
-                logChatHistory(recipient, timestamp + message);
+                logChatHistory(sender, recipient, "OUT", timestamp, msg.getContent());
+                logChatHistory(recipient, sender, "IN", timestamp, msg.getContent());
                 if (!thread.sendMessage(timestamp + message, MessageType.MESSAGE, sender))
                 {
                         clients.remove(i);
@@ -307,23 +307,30 @@ public class ChatDotServer
             // No harm if we can't read
         }
         return history;
-    }  // end logChatHistory
+    }  // end getChatHistory
 
     /*
      * Private Methods
      */
-    private void logChatHistory(ChatDotUser user, String message)
+    private void logChatHistory(ChatDotUser logUser, ChatDotUser toFromUser,
+            String direction, String timestamp, String message)
     {
         BufferedWriter bWriter = null;
         FileWriter fWriter     = null;
         try {
-            File file = new File("ChatHistory/" + user.getUsername() + ".txt");
+            File file = new File("ChatHistory/" + logUser.getUsername() + ".txt");
             if (!file.exists()) {
                 file.createNewFile();
             }
             fWriter   = new FileWriter(file, true);
             bWriter   = new BufferedWriter(fWriter);
-            bWriter.write(message + "\n");
+            if (direction.equals("OUT")) {
+                bWriter.write(timestamp + logUser.getUsername() + " -> "
+                    + toFromUser.getUsername() + ": " + message);
+            } else {
+                bWriter.write(timestamp + toFromUser.getUsername() + " -> "
+                    + logUser.getUsername() + ": " + message + "\n");
+            }
             bWriter.flush();
         } catch (Exception e) {
             display("Failed to log chat. " + e.toString());
@@ -644,7 +651,7 @@ public class ChatDotServer
                 display(e.toString());
             }  // end try/catch
             return true;
-        }  // end sendMessage
+        }  // end sendStatus
 
         private boolean updateChatHistory(String history)
         {

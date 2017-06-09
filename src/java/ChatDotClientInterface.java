@@ -5,6 +5,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import main.ChatDotUser;
 import main.ChatDotClient;
@@ -85,17 +87,17 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
         Object object = event.getSource();
 
         // Get login values
-        if (!loggedIn) {
-            String username = usernameField.getText().trim();
-            String password = passwordField.getText();
-            if (username.length() == 0 || password.length() == 0) {
-                JOptionPane.showMessageDialog(this,
-                    "Please enter both a username and a password.",
-                    "Invalid Input",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+        String username = usernameField.getText().trim();
+        String password = passwordField.getText();
+        if (username.length() == 0 || password.length() == 0) {
+            JOptionPane.showMessageDialog(this,
+                "Please enter both a username and a password.",
+                "Invalid Input",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
+        if (!loggedIn) {
             // Start the client
             user = new ChatDotUser(username, password);
             if (!connected) {
@@ -135,11 +137,10 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
         } else if (object instanceof JButton) {
             JButton button = (JButton) object;
             if (button.getActionCommand().equals("chat")) {
-                String username = button.getText();
-                displayChatWindow(username);
+                String usernameText = button.getText();
+                displayChatWindow(usernameText);
             }
         }
-
     }  // end actionPerformed
 
     public void sendMessage(String sender, String message)
@@ -391,13 +392,16 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
 
     private void closeChatWindows()
     {
-        for (int i = 0; i < chatWindows.size(); ++i) {
-            ChatDotChatWindow window = chatWindows.get(i);
+        Iterator iter = chatWindows.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry pair = (Map.Entry) iter.next();
+            ChatDotChatWindow window = chatWindows.get(pair.getKey());
             if (window != null) {
                 window.setVisible(false);
                 window.dispose();
             }
-            chatWindows.remove(i);
-        }  // end for
+            chatWindows.remove(pair.getKey());
+            iter.remove();
+        }  // end while
     }  // end closeChatWindows
 }
