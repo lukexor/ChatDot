@@ -226,16 +226,31 @@ public class ChatDotServer
             sendError(username, "Invalid username/password.");
             return false;
         }
-        // TODO: Prevent user from loggin in twice
+        // Need to grab which one is logged in and which one is attempting to login
+        ClientThread loggedInClient = null, loggedOutClient = null;
+        for (int i = 0; i < clients.size(); ++i) {
+            ClientThread client = clients.get(i);
+            if (client.getUsername().equals(username)) {
+                if (client.isLoggedIn()) {
+                    loggedInClient = client;
+                } else {
+                    loggedOutClient = client;
+                }
+            }
+        }  // end for
+        if (loggedInClient != null) {
+            loggedOutClient.sendMessage(username + " is already logged in.", MessageType.ERROR, null);
+            return false;
+        }
 
         display(username + " logged in.");
         // Login and update users
         for (int i = 0; i < clients.size(); ++i) {
             ClientThread client = clients.get(i);
             client.sendStatus(username, "Logged In", false);
-            client.setLoggedIn();
             if (client.getUsername().equals(username)) {
                 client.sendMessage("", MessageType.LOGIN, null);
+                client.setLoggedIn();
             }
         }  // end for
         return true;
@@ -532,13 +547,11 @@ public class ChatDotServer
                         if (register(msg)) {
                             login(msg);
                         } else {
-                            // TODO: Error
                             display("Failed to register " + msg.getSender().getUsername());
                         }
                         break;
                     case LOGIN:
                         if (!login(msg)) {
-                            // TODO: Error
                             display("Failed to login " + msg.getSender().getUsername());
                         }
                         break;
@@ -584,7 +597,6 @@ public class ChatDotServer
                         // Nothing
                 }  // end switch
             }  // end while (true)
-            // TODO: Notify other users of logout
             logout(threadId);
             close();
         }  // end run

@@ -168,7 +168,11 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
      */
     void displayError(String msg)
     {
-        JOptionPane.showMessageDialog(this,
+        JFrame frame = new JFrame();
+        frame.setAlwaysOnTop(true);
+        frame.setSize(200, 100);
+        frame.setLocation(100, 100);
+        JOptionPane.showMessageDialog(frame,
             msg,
             "Error",
             JOptionPane.ERROR_MESSAGE);
@@ -260,7 +264,6 @@ public class ChatDotClientInterface extends JFrame implements ActionListener
         loginPanel.add(loginLabel);
 
         // Login Fields Panel
-        // TODO: Lookup JFrame docs and format this better
         JPanel loginFieldsPanel = new JPanel(new GridLayout(2, 2));
         JLabel usernameLabel    = new JLabel("Username: ");
         JLabel passwordLabel    = new JLabel("Password: ");
